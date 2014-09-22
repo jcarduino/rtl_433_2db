@@ -10,5 +10,6 @@ Needs:
 Please use as example only and customze as you wish. It is ment as an example how to handle output, running it as subprocess.
 
 Todo: working now on some error detection when database connection fails.
+The code is based on my fork of rtl_433, so it needs customising to your devices.
 
 
