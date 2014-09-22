@@ -4,7 +4,7 @@
 # install phython 2.7
 # let it run ;)
 #!/usr/bin/python
-import sys
+#import sys
 import subprocess
 import time
 import threading
@@ -82,6 +82,7 @@ def startsubprocess(command):
             print("Tables can be created by the script.")
         else:
             print(err)
+    reconnectdb=0#if 0 then no error or need ro be reconnected
     #else:
     #cnx.close()
     cursor = cnx.cursor()
@@ -150,10 +151,19 @@ def startsubprocess(command):
                         #last field, put in db
                         # UPDATE DB
                         #########################
-                        sensordata = (device,'Rainsensor',rainfall)
-                        cursor.execute(add_sensordata,sensordata)
-                        # Make sure data is committed to the database
-                        cnx.commit()
+                        if reconnectdb:
+                            print("Trying reconnecting to database")
+                            cnx.reconnect()
+                            reconnectdb=0
+                        
+                        try:
+                            sensordata = (device,'Rainsensor',rainfall)
+                            cursor.execute(add_sensordata,sensordata)
+                            # Make sure data is committed to the database
+                            cnx.commit()
+                        except:
+                            reconnectdb=1
+                            print("Error connecting to database")
                 if status==2:#wind
                     if 'Device'in line:
                         tmp,tmp=line.split('=')
@@ -175,16 +185,23 @@ def startsubprocess(command):
                         #last field, put in db
                         # UPDATE DB
                         #########################
-                        sensordata = (device,'Windspeed',wspeed)
-                        cursor.execute(add_sensordata,sensordata)
-                        # Make sure data is committed to the database
-                        #cnx.commit()
-                        sensordata = (device,'Windgust',wgust)
-                        cursor.execute(add_sensordata,sensordata)
-                        sensordata = (device, 'Winddirection',direction)
-                        # Make sure data is committed to the database
-                        cnx.commit()
-
+                        try:
+                            if reconnectdb:
+                                print("Trying reconnecting to database")
+                                cnx.reconnect()
+                                reconnectdb=0
+                            sensordata = (device,'Windspeed',wspeed)
+                            cursor.execute(add_sensordata,sensordata)
+                            # Make sure data is committed to the database
+                            #cnx.commit()
+                            sensordata = (device,'Windgust',wgust)
+                            cursor.execute(add_sensordata,sensordata)
+                            sensordata = (device, 'Winddirection',direction)
+                            # Make sure data is committed to the database
+                            cnx.commit()
+                        except:
+                            print("Error connecting to database")
+                            reconnectdb=1
                 if status==3:#temp
                     if 'Device'in line:
                         tmp,tmp=line.split('=')
@@ -203,15 +220,22 @@ def startsubprocess(command):
                         #last field, put in db
                         # UPDATE DB
                         #########################
-                        sensordata = (device,'Temperature',temp)
-                        cursor.execute(add_sensordata,sensordata)
-                        # Make sure data is committed to the database
-                        #cnx.commit()
-                        sensordata = (device,'Humidity',hum)
-                        cursor.execute(add_sensordata,sensordata)
-                        # Make sure data is committed to the database
-                        cnx.commit()
-
+                        try:
+                            if reconnectdb:
+                                print("Trying reconnecting to database")
+                                cnx.reconnect()
+                                reconnectdb=0
+                            sensordata = (device,'Temperature',temp)
+                            cursor.execute(add_sensordata,sensordata)
+                            # Make sure data is committed to the database
+                            #cnx.commit()
+                            sensordata = (device,'Humidity',hum)
+                            cursor.execute(add_sensordata,sensordata)
+                            # Make sure data is committed to the database
+                            cnx.commit()
+                        except:
+                            print("Error connecting to database")
+                            reconnectdb=1
                 if status==4:#kaku
                     if 'KakuId'in line:
                         tmp,tmp,tmp,tmp1=line.split(' ')
@@ -237,11 +261,24 @@ def startsubprocess(command):
                         #last field, put in db
                         # UPDATE DB
                         #########################
-                        print("Kaku ID "+str(device)+" Unit "+unit+" Grp"+group+" Do "+command+" Dim "+dim)
-                        sensordata = (device,'Kaku '+unit+' Grp'+group+" Do "+command+ ' Dim '+ dim,dimvalue)
-                        cursor.execute(add_sensordata,sensordata)
-                        # Make sure data is committed to the database
-                        cnx.commit()
+                        try:
+                            if reconnectdb:
+                                print("Trying reconnecting to database")
+                                cnx.reconnect()
+                                reconnectdb=0
+                            print("Kaku ID "+str(device)+" Unit "+unit+" Grp"+group+" Do "+command+" Dim "+dim)
+                            sensordata = (device,'Kaku '+unit+' Grp'+group+" Do "+command+ ' Dim '+ dim,dimvalue)
+                            cursor.execute(add_sensordata,sensordata)
+                            # Make sure data is committed to the database
+                            print("committing")
+                            cnx.commit()
+                        except mysql.connector.Error as err:
+                            if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+                                print("Table seams to exist, no need to create it.")
+                            else:
+                                print(err.msg)
+                            reconnectdb=1
+                            print("Error connecting to database")
         # Sleep a bit before asking the readers again.
         time.sleep(.1)
 
